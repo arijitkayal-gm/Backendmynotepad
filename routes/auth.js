@@ -4,10 +4,11 @@ const router=express.Router();
 const { body, validationResult } = require('express-validator');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const fetchuser = require('../middleware/fetchuser');
 
 const JwtSignature="This_is_ArijitKayal!"
 
-//create user using : POST "/api/auth/createuser".No login
+//ROUTE 1:create user using : POST "/api/auth/createuser".No login
 router.post('/createuser',[body('name').isLength({ min: 3 }),body('email').isEmail(),body('password').isLength({ min: 5 }),],async(req,res)=>{
     const errors = validationResult(req);
 
@@ -51,7 +52,7 @@ router.post('/createuser',[body('name').isLength({ min: 3 }),body('email').isEma
     
 })
 
-//create user using : POST "/api/auth/createuser".No login
+//ROUTE 2:create user using : POST "/api/auth/login".No login
 router.post('/login',[body('email').isEmail(),body('password',"Password cannot be blank").exists()],async(req,res)=>{
     const errors = validationResult(req);
 
@@ -87,4 +88,19 @@ router.post('/login',[body('email').isEmail(),body('password',"Password cannot b
     }
 })
 
+//ROUTE 3:create user using : POST "/api/auth/getuser".Login required.
+router.post('/getuser',fetchuser,async(req,res)=>{
+    
+    try{
+        const userID=req.user.id;
+
+        const user=await User.findById(userID).select("-password");
+        res.send(user);
+    }catch(error){
+        console.error(error.message);
+        res.status(500).send("Something went wrong!!!");
+    }
+})
+
+    
 module.exports=router;
