@@ -11,10 +11,11 @@ const JwtSignature="This_is_ArijitKayal!"
 //ROUTE 1:create user using : POST "/api/auth/createuser".No login
 router.post('/createuser',[body('name').isLength({ min: 3 }),body('email').isEmail(),body('password').isLength({ min: 5 }),],async(req,res)=>{
     const errors = validationResult(req);
+    let success=false;
 
     //If error occurs return bad request and errors
     if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
+      return res.status(400).json({success, errors: errors.array() });
     }
 
     try{
@@ -22,7 +23,7 @@ router.post('/createuser',[body('name').isLength({ min: 3 }),body('email').isEma
         let user=await User.findOne({email: req.body.email});
         console.log(user);
         if(user){
-            return res.status(400).json({ errors: "Email already exists in database." }); 
+            return res.status(400).json({success, errors: "Email already exists in database." }); 
         }
         //Securing the password by changing it into hash+salt
         const salt=await bcrypt.genSalt(10);
@@ -42,7 +43,8 @@ router.post('/createuser',[body('name').isLength({ min: 3 }),body('email').isEma
         const authToken=jwt.sign(data,JwtSignature);
 
         //res.json(user);
-        res.json({authToken});
+        success=true;
+        res.json({success,authToken});
     }catch(error){
         console.error(error.message);
         res.status(500).send("Something went wrong!!!");
@@ -52,13 +54,14 @@ router.post('/createuser',[body('name').isLength({ min: 3 }),body('email').isEma
     
 })
 
-//ROUTE 2:create user using : POST "/api/auth/login".No login
+//ROUTE 2:Login using : POST "/api/auth/login".No login
 router.post('/login',[body('email').isEmail(),body('password',"Password cannot be blank").exists()],async(req,res)=>{
     const errors = validationResult(req);
+    let success=false;
 
     //If error occurs return bad request and errors
     if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
+      return res.status(400).json({success, errors: errors.array() });
     }
 
     const {email,password}=req.body;
@@ -66,13 +69,13 @@ router.post('/login',[body('email').isEmail(),body('password',"Password cannot b
         //check if email exist in database
         let user=await User.findOne({email});
         if(!user){
-            return res.status(400).json({ errors: "Enter correct username and password!"});
+            return res.status(400).json({success, errors: "Enter correct username and password!"});
         }
 
         //check if password is correct by matching the hashes
         const checkpassword=await bcrypt.compare(password,user.password);
         if(!checkpassword){
-            return res.status(400).json({ errors: "Enter correct username and password!"});
+            return res.status(400).json({success, errors: "Enter correct username and password!"});
         }
 
         //creating a jwt token with index and a signature string
@@ -80,8 +83,8 @@ router.post('/login',[body('email').isEmail(),body('password',"Password cannot b
             user:{id:user.id}
         }
         const authToken=jwt.sign(data,JwtSignature);
-
-        res.json({authToken});
+        success=true;
+        res.json({success,authToken});
     }catch(error){
         console.error(error.message);
         res.status(500).send("Something went wrong!!!");
